@@ -332,6 +332,8 @@ export class contactUsService {
     const params: unknown[] = [];
     let idx = 1;
 
+    console.log("page :",page,limit)
+    
     if (search?.email?.trim()) {
       conditions.push(`email ILIKE $${idx}`);
       params.push(`%${search.email.trim()}%`);
@@ -350,7 +352,8 @@ export class contactUsService {
       `SELECT * FROM contact_us ${where} ORDER BY created_at DESC LIMIT $${idx} OFFSET $${idx + 1}`,
       [...params, limit, offset],
     );
-
+  console.log("result : ",result);
+  
     return { data: result.rows, total, page, limit };
   }
 
