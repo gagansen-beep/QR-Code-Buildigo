@@ -5,7 +5,7 @@
   "main": "dist/server.js",
  "scripts": {
   "build": "tsc",
-  "start": "npm run build && node dist/server.js",
+  "start": "node server.js",
   "dev": "ts-node server.ts",
   "migrate": "ts-node middleware/database/migrate.ts"
 },
