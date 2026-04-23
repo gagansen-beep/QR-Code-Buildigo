@@ -116,7 +116,7 @@ export class CardController {
     next: NextFunction,
   ): Promise<void> {
     try {
-      const card = await CardService.findById(req.params.id);
+      const card = await CardService.findById(String(req.params.id));
       if (!card) {
         res.status(404).json({ success: false, message: "Card not found" });
         return;
@@ -143,7 +143,7 @@ export class CardController {
         return;
       }
 
-      const oldCard = await CardService.findById(req.params.id);
+      const oldCard = await CardService.findById(String(req.params.id));
       if (!oldCard) {
         cleanupUpload(req.file);
         res.status(404).json({ success: false, message: "Card not found" });
@@ -156,7 +156,7 @@ export class CardController {
 
       try {
         const card = await CardService.publicUpdate(
-          req.params.id,
+          String(req.params.id),
           {
             name: req.body.name,
             designation: req.body.designation,
@@ -193,13 +193,13 @@ export class CardController {
     next: NextFunction,
   ): Promise<void> {
     try {
-      const oldCard = await CardService.findById(req.params.id);
+      const oldCard = await CardService.findById(String(req.params.id));
       if (!oldCard) {
         res.status(404).json({ success: false, message: "Card not found" });
         return;
       }
 
-      await CardService.publicDelete(req.params.id);
+      await CardService.publicDelete(String(req.params.id));
       if (oldCard.image_url) deleteOldImage(oldCard.image_url);
 
       res.json({ success: true, message: "Card deleted successfully" });
@@ -266,7 +266,7 @@ export class CardController {
         return;
       }
 
-      const oldCard = await CardService.findById(req.params.id);
+      const oldCard = await CardService.findById(String(req.params.id));
       if (!oldCard) {
         cleanupUpload(req.file);
         res.status(404).json({ success: false, message: "Card not found" });
@@ -281,7 +281,7 @@ export class CardController {
         const card = await CardService.adminUpdate(
           body.admin_email,
           body.admin_password,
-          req.params.id,
+          String(req.params.id),
           {
             name: body.name,
             designation: body.designation,
@@ -321,8 +321,8 @@ export class CardController {
         return;
       }
 
-      const oldCard = await CardService.findById(req.params.id);
-      await CardService.adminDelete(admin_email, admin_password, req.params.id);
+      const oldCard = await CardService.findById(String(req.params.id));
+      await CardService.adminDelete(admin_email, admin_password, String(req.params.id));
 
       if (oldCard?.image_url) deleteOldImage(oldCard.image_url);
 
@@ -387,7 +387,7 @@ export class ContactController {
     next: NextFunction,
   ): Promise<void> {
     try {
-      const contact = await contactUsService.findById(req.params.id);
+      const contact = await contactUsService.findById(String(req.params.id));
       if (!contact) {
         res.status(404).json({ success: false, message: "Contact not found" });
         return;
@@ -405,7 +405,7 @@ export class ContactController {
     next: NextFunction,
   ): Promise<void> {
     try {
-      await contactUsService.delete(req.params.id);
+      await contactUsService.delete(String(req.params.id));
       res.json({ success: true, message: "Contact deleted successfully" });
     } catch (err) {
       next(err);
