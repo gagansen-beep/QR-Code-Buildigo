@@ -75,11 +75,12 @@ export function createApp(): express.Application {
   const api = config.app.apiPrefix;
   app.use(`${api}/cards`, cardRoutes);
 
-  const frontendPath = path.join(process.cwd(), "frontend", "dist");
+  const frontendPath = path.join(__dirname, "..", "..", "frontend", "dist");
   app.use(express.static(frontendPath));
   app.get(/.*/, (_req, res) => {
   res.sendFile(path.join(frontendPath, "index.html"));
 });
+
 
   // ─── Error Handling ───
   app.use(notFoundHandler);
