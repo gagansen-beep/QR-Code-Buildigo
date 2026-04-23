@@ -25,7 +25,7 @@ export const config = {
     ssl: optionalEnv('DB_SSL', 'false') === 'true',
   },
   cors: {
-    origins: optionalEnv('CORS_ORIGINS', 'http://localhost:5173,http://localhost:3000').split(','),
+    origins: optionalEnv('CORS_ORIGINS', 'http://localhost:5173,http://localhost:3000,https://qr.buildigo.org').split(','),
   },
   rateLimit: {
     windowMs: parseInt(optionalEnv('RATE_LIMIT_WINDOW_MS', '60000'), 10),
