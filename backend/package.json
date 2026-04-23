@@ -10,8 +10,8 @@
     "migrate": "ts-node middleware/database/migrate.ts"
   },
   "engines": {
-  "node": ">=18 <=22"
-},
+    "node": ">=18"
+  },
   "dependencies": {
     "bcryptjs": "^3.0.3",
     "compression": "^1.7.4",
