@@ -3,12 +3,12 @@
   "version": "1.0.0",
   "description": "QR Code Business Card Generator Backend",
   "main": "dist/server.js",
-  "scripts": {
-    "build": "tsc",
-    "start": "node dist/server.js",
-    "dev": "ts-node server.ts",
-    "migrate": "ts-node middleware/database/migrate.ts"
-  },
+ "scripts": {
+  "build": "tsc",
+  "start": "npm run build && node dist/server.js",
+  "dev": "ts-node server.ts",
+  "migrate": "ts-node middleware/database/migrate.ts"
+},
   "engines": {
     "node": ">=18"
   },
