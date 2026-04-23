@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { randomUUID } from 'crypto';
-import { logger } from '../config/logger';
+import { logger } from './config/logger';
 
 export function requestIdMiddleware(req: Request, _res: Response, next: NextFunction): void {
   (req as Request & { id: string }).id = randomUUID();

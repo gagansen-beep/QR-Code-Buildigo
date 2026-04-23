@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import { logger } from '../config/logger';
+import { logger } from './config/logger';
 import { AppError } from '../modules/cards/service';
 
 export function notFoundHandler(req: Request, res: Response): void {

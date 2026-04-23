@@ -3,10 +3,10 @@ version: '3.9'
 services:
   postgres:
     image: postgres:16-alpine
-    container_name: buildigo_postgres
+    container_name: qrcode_postgres
     restart: unless-stopped
     environment:
-      POSTGRES_DB: Buildigo
+      POSTGRES_DB: QRCode
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres_dev_password
     ports:
@@ -23,40 +23,35 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: buildigo_api
+    container_name: qrcode_api
     restart: unless-stopped
     depends_on:
       postgres:
         condition: service_healthy
     ports:
-      - "3000:3000"
+      - "3005:3005"
     environment:
       NODE_ENV: production
-      PORT: 3000
+      PORT: 3005
       API_PREFIX: /api
-      APP_NAME: Buildigo
+      APP_NAME: QRCode
       DB_HOST: postgres
       DB_PORT: 5432
-      DB_NAME: Buildigo
+      DB_NAME: QRCode
       DB_USER: postgres
       DB_PASSWORD: postgres_dev_password
       DB_POOL_MIN: 2
       DB_POOL_MAX: 20
       DB_SSL: "false"
-      JWT_ACCESS_SECRET: change_this_to_a_secure_random_string_min_32_chars
-      JWT_REFRESH_SECRET: change_this_to_another_secure_random_string_32_chars
-      JWT_ACCESS_EXPIRY: 15m
-      JWT_REFRESH_EXPIRY: 7d
-      CORS_ORIGINS: http://localhost:3001,http://localhost:3002,http://localhost:3003
+      CORS_ORIGINS: http://localhost:5173
       RATE_LIMIT_WINDOW_MS: "60000"
-      RATE_LIMIT_MAX_REQUESTS: "100"
-      AUTH_RATE_LIMIT_MAX: "5"
+      RATE_LIMIT_MAX_REQUESTS: "200"
       STORAGE_BASE_PATH: /app/uploads
       MAX_FILE_SIZE_MB: "10"
       LOG_LEVEL: info
-      ADMIN_EMAIL: admin@buildigo.in
-      ADMIN_PASSWORD: Admin@123456
-      ADMIN_NAME: Super Admin
+      FRONTEND_URL: http://localhost:5173
+      ADMIN_EMAIL: admin@example.com
+      ADMIN_PASSWORD: change_this_password
     volumes:
       - uploads:/app/uploads
 

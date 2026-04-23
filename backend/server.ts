@@ -1,7 +1,7 @@
-import { config } from './config';
-import { logger } from './config/logger';
+import { config } from './middleware/config';
+import { logger } from './middleware/config/logger';
 import { createApp } from './app';
-import { closePool } from './database/connection';
+import { closePool } from './middleware/database/connection';
 
 const app = createApp();
 

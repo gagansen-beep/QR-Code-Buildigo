@@ -5,7 +5,7 @@ import compression from 'compression';
 import rateLimit from 'express-rate-limit';
 import path from 'path';
 
-import { config } from './config';
+import { config } from './middleware/config';
 import { requestIdMiddleware, requestLogger } from './middleware/request-logger';
 import { errorHandler, notFoundHandler } from './middleware/error-handler';
 import { cardRoutes } from './modules/cards/routes';
@@ -51,7 +51,7 @@ export function createApp(): express.Application {
 
   // ─── Health Check ───
   app.get('/health', async (_req, res) => {
-    const { healthCheck } = await import('./database/connection');
+    const { healthCheck } = await import('./middleware/database/connection');
     const dbHealthy = await healthCheck();
     res.status(dbHealthy ? 200 : 503).json({
       status: dbHealthy ? 'healthy' : 'unhealthy',
