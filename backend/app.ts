@@ -269,14 +269,24 @@ export function createApp(): express.Application {
   app.use(`${api}/cards`, cardRoutes);
 
   // ─── Frontend Static Files ───
-  const frontendPath = path.join(
+  // const frontendPath = path.join(
+  //   process.cwd(),
+  //   "..",
+  //   "public_html",
+  //   "qr-code-Build",
+  //   "frontend",
+  //   "dist"
+  // );
+
+    const frontendPath = path.join(
     process.cwd(),
     "..",
     "public_html",
-    "qr-code-Build",
+    "Build",
     "frontend",
-    "dist"
+    
   );
+
 
   app.use(express.static(frontendPath));
   app.get(/.*/, (_req, res) => {
