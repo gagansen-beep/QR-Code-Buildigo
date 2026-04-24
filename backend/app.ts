@@ -279,14 +279,14 @@ export function createApp(): express.Application {
   // );
 
     const frontendPath = path.join(
-    process.cwd(),
-    "..",
-    "public_html",
-    "builds",
-    "source",
-    "frontend",
-    
-  );
+  process.cwd(),
+  "..",
+  "public_html",
+  "builds",
+  "source",
+  "frontend",
+  "dist"
+);
 
 
   app.use(express.static(frontendPath));
