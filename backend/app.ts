@@ -275,7 +275,15 @@ export function createApp(): express.Application {
   // ─────────────────────────────────────────────
   // FRONTEND SERVE (HOSTINGER)
   // ─────────────────────────────────────────────
-  const frontendPath = path.join(process.cwd(), "frontend", "dist");
+  const frontendPath = path.join(
+    process.cwd(),
+    "..",
+    "public_html",
+    ".builds",
+    "source",
+    "frontend",
+    "dist"
+  );
 
   app.use(express.static(frontendPath));
   app.get(/(.*)/, (_req, res) => {
