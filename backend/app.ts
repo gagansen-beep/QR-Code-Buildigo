@@ -188,6 +188,7 @@
 // }
 
 
+
 import express from "express";
 import cors from "cors";
 import helmet from "helmet";
@@ -213,14 +214,15 @@ export function createApp(): express.Application {
   app.use(
     helmet({
       crossOriginResourcePolicy: { policy: "cross-origin" },
-    }),
+    })
   );
+
   app.use(
     cors({
       origin: config.cors.origins,
       methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
       allowedHeaders: ["Content-Type", "X-Request-ID"],
-    }),
+    })
   );
 
   // Static uploads
@@ -230,7 +232,7 @@ export function createApp(): express.Application {
       res.setHeader("Cross-Origin-Resource-Policy", "cross-origin");
       next();
     },
-    express.static(path.join(process.cwd(), config.storage.basePath)),
+    express.static(path.join(process.cwd(), config.storage.basePath))
   );
 
   app.use(compression());
@@ -250,12 +252,14 @@ export function createApp(): express.Application {
       message: "Too many requests, please try again later",
     },
   });
+
   app.use(limiter);
 
   // ─── Health Check ───
   app.get("/health", async (_req, res) => {
     const { healthCheck } = await import("./middleware/database/connection");
     const dbHealthy = await healthCheck();
+
     res.status(dbHealthy ? 200 : 503).json({
       status: dbHealthy ? "healthy" : "unhealthy",
       timestamp: new Date().toISOString(),
@@ -264,32 +268,30 @@ export function createApp(): express.Application {
     });
   });
 
-  // ─── Routes ───
+  // ─── API Routes ───
   const api = config.app.apiPrefix;
   app.use(`${api}/cards`, cardRoutes);
 
-  // ─── Frontend Static Files ───
-  // const frontendPath = path.join(
-  //   process.cwd(),
-  //   "..",
-  //   "public_html",
-  //   "qr-code-Build",
-  //   "frontend",
-  //   "dist"
-  // );
+  // ─────────────────────────────────────────────
+  // FRONTEND SERVE (HOSTINGER)
+  // ─────────────────────────────────────────────
 
-const frontendPath = path.join(
-  process.cwd(),  
-  "..",          
-  "public_html",
-  ".builds",
-  "source",
-  "frontend",
-  "dist"
-);
+  const frontendPath = path.join(
+    process.cwd(),
+    "..",
+    "public_html",
+    "frontend",
+    "dist",
+    "dist"
+  );
 
+  console.log("frontendPath:", frontendPath);
+
+  // static files
   app.use(express.static(frontendPath));
-  app.get(/.*/, (_req, res) => {
+
+  // SPA fallback (Express 5 compatible)
+  app.use((req, res) => {
     res.sendFile(path.join(frontendPath, "index.html"));
   });
 
