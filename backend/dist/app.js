@@ -258,12 +258,9 @@ function createApp() {
     // ─────────────────────────────────────────────
     // FRONTEND SERVE (HOSTINGER)
     // ─────────────────────────────────────────────
-    const frontendPath = path_1.default.join(process.cwd(), "..", "public_html", ".builds", "source", "frontend", "dist");
-    console.log("frontendPath:", frontendPath);
-    // static files
+    const frontendPath = path_1.default.join(process.cwd(), "frontend", "dist");
     app.use(express_1.default.static(frontendPath));
-    // SPA fallback (Express 5 compatible)
-    app.use((req, res) => {
+    app.get(/(.*)/, (_req, res) => {
         res.sendFile(path_1.default.join(frontendPath, "index.html"));
     });
     // ─── Error Handling ───

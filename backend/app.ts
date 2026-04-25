@@ -275,24 +275,10 @@ export function createApp(): express.Application {
   // ─────────────────────────────────────────────
   // FRONTEND SERVE (HOSTINGER)
   // ─────────────────────────────────────────────
+  const frontendPath = path.join(process.cwd(), "frontend", "dist");
 
-  const frontendPath = path.join(
-    process.cwd(),
-    "..",
-    "public_html",
-    ".builds",
-    "source",
-    "frontend",
-    "dist",
-  );
-
-  console.log("frontendPath:", frontendPath);
-
-  // static files
   app.use(express.static(frontendPath));
-
-  // SPA fallback (Express 5 compatible)
-  app.use((req, res) => {
+  app.get(/(.*)/, (_req, res) => {
     res.sendFile(path.join(frontendPath, "index.html"));
   });
 
