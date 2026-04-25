@@ -258,7 +258,7 @@ function createApp() {
     // ─────────────────────────────────────────────
     // FRONTEND SERVE (HOSTINGER)
     // ─────────────────────────────────────────────
-    const frontendPath = path_1.default.join(process.cwd(), "..", "public_html", "frontend", "dist", "dist");
+    const frontendPath = path_1.default.join(process.cwd(), "..", "public_html", ".builds", "source", "frontend", "dist");
     console.log("frontendPath:", frontendPath);
     // static files
     app.use(express_1.default.static(frontendPath));

@@ -280,9 +280,10 @@ export function createApp(): express.Application {
     process.cwd(),
     "..",
     "public_html",
+    ".builds",
+    "source",
     "frontend",
     "dist",
-    "dist"
   );
 
   console.log("frontendPath:", frontendPath);
