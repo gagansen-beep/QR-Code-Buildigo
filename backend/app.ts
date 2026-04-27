@@ -275,20 +275,40 @@ export function createApp(): express.Application {
   // ─────────────────────────────────────────────
   // FRONTEND SERVE (HOSTINGER)
   // ─────────────────────────────────────────────
-  const frontendPath = path.join(
-    process.cwd(),
-    "..",
-    "public_html",
-    ".builds",
-    "source",
-    "frontend",
-    "dist"
-  );
+  // const frontendPath = path.join(
+  //   process.cwd(),
+  //   "..",
+  //   "public_html",
+  //   ".builds",
+  //   "source",
+  //   "frontend",
+  //   "dist"
+  // );
 
-  app.use(express.static(frontendPath));
-  app.get(/(.*)/, (_req, res) => {
-    res.sendFile(path.join(frontendPath, "index.html"));
-  });
+  // app.use(express.static(frontendPath));
+  // app.get(/(.*)/, (_req, res) => {
+  //   res.sendFile(path.join(frontendPath, "index.html"));
+  // });
+  
+  // ─── FRONTEND SERVE ───
+const frontendPath = path.join(
+  "/home/u166243786/domains/qr.buildigo.org/public_html",
+  ".builds",
+  "source", 
+  "frontend",
+  "dist"
+);
+
+app.use(express.static(frontendPath));
+
+// API routes ke baad ye daalo - /card/* React ko bhejo
+app.get(/^\/card\/.*/, (_req, res) => {
+  res.sendFile(path.join(frontendPath, "index.html"));
+});
+
+app.get(/(.*)/, (_req, res) => {
+  res.sendFile(path.join(frontendPath, "index.html"));
+});
 
   // ─── Error Handling ───
   app.use(notFoundHandler);
