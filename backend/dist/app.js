@@ -252,20 +252,34 @@ function createApp() {
             database: dbHealthy ? "connected" : "disconnected",
         });
     });
-    // ─── API Routes ───
-    const api = config_1.config.app.apiPrefix;
-    app.use(`${api}/cards`, routes_1.cardRoutes);
     // ─────────────────────────────────────────────
     // FRONTEND SERVE (HOSTINGER)
     // ─────────────────────────────────────────────
-    const frontendPath = path_1.default.join(process.cwd(), "..", "public_html", ".builds", "source", "frontend", "dist");
+    // const frontendPath = path.join(
+    //   process.cwd(),
+    //   "..",
+    //   "public_html",
+    //   ".builds",
+    //   "source",
+    //   "frontend",
+    //   "dist"
+    // );
+    // app.use(express.static(frontendPath));
+    // app.get(/(.*)/, (_req, res) => {
+    //   res.sendFile(path.join(frontendPath, "index.html"));
+    // });
+    // ─── API Routes ───
+    const api = config_1.config.app.apiPrefix;
+    app.use(`${api}/cards`, routes_1.cardRoutes);
+    // ─── Frontend ───
+    const frontendPath = "/home/u166243786/domains/qr.buildigo.org/public_html/.builds/source/frontend/dist";
     app.use(express_1.default.static(frontendPath));
     app.get(/(.*)/, (_req, res) => {
         res.sendFile(path_1.default.join(frontendPath, "index.html"));
     });
-    // ─── Error Handling ───
-    app.use(error_handler_1.notFoundHandler);
+    // ─── Error Handling - BILKUL LAST MEIN ───
     app.use(error_handler_1.errorHandler);
+    // notFoundHandler BILKUL MAT DAALO - app.get("*") handle kar raha hai
     return app;
 }
 //# sourceMappingURL=app.js.map

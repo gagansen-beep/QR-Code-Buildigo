@@ -268,9 +268,7 @@ export function createApp(): express.Application {
     });
   });
 
-  // ─── API Routes ───
-  const api = config.app.apiPrefix;
-  app.use(`${api}/cards`, cardRoutes);
+
 
   // ─────────────────────────────────────────────
   // FRONTEND SERVE (HOSTINGER)
@@ -290,29 +288,22 @@ export function createApp(): express.Application {
   //   res.sendFile(path.join(frontendPath, "index.html"));
   // });
   
-  // ─── FRONTEND SERVE ───
-const frontendPath = path.join(
-  "/home/u166243786/domains/qr.buildigo.org/public_html",
-  ".builds",
-  "source", 
-  "frontend",
-  "dist"
-);
+// ─── API Routes ───
+const api = config.app.apiPrefix;
+app.use(`${api}/cards`, cardRoutes);
+
+// ─── Frontend ───
+const frontendPath = "/home/u166243786/domains/qr.buildigo.org/public_html/.builds/source/frontend/dist";
 
 app.use(express.static(frontendPath));
-
-// API routes ke baad ye daalo - /card/* React ko bhejo
-app.get(/^\/card\/.*/, (_req, res) => {
-  res.sendFile(path.join(frontendPath, "index.html"));
-});
 
 app.get(/(.*)/, (_req, res) => {
   res.sendFile(path.join(frontendPath, "index.html"));
 });
 
-  // ─── Error Handling ───
-  app.use(notFoundHandler);
-  app.use(errorHandler);
+// ─── Error Handling - BILKUL LAST MEIN ───
+app.use(errorHandler);
+// notFoundHandler BILKUL MAT DAALO - app.get("*") handle kar raha hai
 
   return app;
 }
