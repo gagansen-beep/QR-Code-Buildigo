@@ -62,11 +62,13 @@ async function runMigrations() {
         logger_1.logger.info({ count: migrated }, 'Migrations completed');
     }
 }
-// Run if called directly
-runMigrations()
-    .then(() => process.exit(0))
-    .catch((err) => {
-    logger_1.logger.error({ err }, 'Migration runner failed');
-    process.exit(1);
-});
+// Run if called directly (not when imported)
+if (require.main === module) {
+    runMigrations()
+        .then(() => process.exit(0))
+        .catch((err) => {
+        logger_1.logger.error({ err }, 'Migration runner failed');
+        process.exit(1);
+    });
+}
 //# sourceMappingURL=migrate.js.map

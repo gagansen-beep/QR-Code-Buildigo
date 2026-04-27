@@ -35,14 +35,15 @@ exports.cardRoutes = router;
 router.post('/admin/all', controller_1.CardController.adminGetAll);
 router.put('/admin/:id', upload.single('image'), controller_1.CardController.adminUpdate);
 router.delete('/admin/:id', controller_1.CardController.adminRemove);
-// Public routes
+// Contact routes (must come before /:id to avoid param capture)
+router.post('/contact/create', controller_1.ContactController.createContact);
+router.get('/contact', controller_1.ContactController.getAllContact);
+router.put('/contact/:id', controller_1.ContactController.getByIdContact);
+router.delete('/contact/:id', controller_1.ContactController.deleteContact);
+// Public card routes
 router.get('/', controller_1.CardController.publicGetAll);
 router.post('/', upload.single('image'), controller_1.CardController.create);
 router.get('/:id', controller_1.CardController.getById);
 router.put('/:id', upload.single('image'), controller_1.CardController.update);
 router.delete('/:id', controller_1.CardController.remove);
-router.post('/contact/create', controller_1.ContactController.createContact);
-router.get('/contact/', controller_1.ContactController.getAllContact);
-router.put('/contact/:id', controller_1.ContactController.getByIdContact);
-router.delete('/contact/:id', controller_1.ContactController.deleteContact);
 //# sourceMappingURL=routes.js.map

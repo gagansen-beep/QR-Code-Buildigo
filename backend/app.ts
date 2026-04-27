@@ -201,7 +201,7 @@ import {
   requestIdMiddleware,
   requestLogger,
 } from "./middleware/request-logger";
-import { errorHandler, notFoundHandler } from "./middleware/error-handler";
+import { errorHandler } from "./middleware/error-handler";
 import { cardRoutes } from "./modules/cards/routes";
 
 export function createApp(): express.Application {
@@ -288,26 +288,38 @@ export function createApp(): express.Application {
   //   res.sendFile(path.join(frontendPath, "index.html"));
   // });
   
-// ─── API Routes ───
-const api = config.app.apiPrefix;
-app.use(`${api}/cards`, cardRoutes);
+  // ─── API Routes ───
+  const api = config.app.apiPrefix;
+  app.use(`${api}/cards`, cardRoutes);
 
-// ─── Frontend ───
-const frontendPath = "/home/u166243786/domains/qr.buildigo.org/public_html/.builds/source/frontend/dist";
+  // ─── Frontend Static Files ───
+  // FRONTEND_PATH env var se set karo, ya Hostinger default use karo
+  const frontendPath =
+    process.env.FRONTEND_PATH ||
+    '/home/u166243786/domains/qr.buildigo.org/public_html/.builds/source/frontend/dist';
 
-app.use(express.static(frontendPath));
+  const fs = require('fs') as typeof import('fs');
+  const frontendExists = fs.existsSync(frontendPath);
 
-app.get("/card/:id",(_req, res)=>{
-res.sendFile(path.join(frontendPath, "index.html"));
-})
+  if (frontendExists) {
+    app.use(express.static(frontendPath));
 
-app.get(/(.*)/, (_req, res) => {
-  res.sendFile(path.join(frontendPath, "index.html"));
-});
+    // SPA fallback — all non-API routes serve index.html (Express 5 requires regex, not '*')
+    app.get(/(.*)/, (_req, res) => {
+      res.sendFile(path.join(frontendPath, 'index.html'));
+    });
+  } else {
+    // Frontend not deployed here — API-only mode
+    app.get(/(.*)/, (_req, res) => {
+      res.status(404).json({
+        success: false,
+        message: 'Frontend not found. Set FRONTEND_PATH or deploy frontend to the correct path.',
+      });
+    });
+  }
 
-// ─── Error Handling - BILKUL LAST MEIN ───
-app.use(errorHandler);
-// notFoundHandler BILKUL MAT DAALO - app.get("*") handle kar raha hai
+  // ─── Error Handling ───
+  app.use(errorHandler);
 
   return app;
 }

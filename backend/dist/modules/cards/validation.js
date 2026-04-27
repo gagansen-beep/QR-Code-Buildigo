@@ -97,8 +97,8 @@ function validateContactUs(body) {
     const message = body.message?.trim();
     if (!message)
         errors.message = 'Message is required';
-    else if (message.length > 100)
-        errors.message = 'Message must be 100 characters or less';
+    else if (message.length > 2000)
+        errors.message = 'Message must be 2000 characters or less';
     return errors;
 }
 //# sourceMappingURL=validation.js.map

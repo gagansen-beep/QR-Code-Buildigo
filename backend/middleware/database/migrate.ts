@@ -65,12 +65,14 @@ async function runMigrations(): Promise<void> {
   }
 }
 
-// Run if called directly
-runMigrations()
-  .then(() => process.exit(0))
-  .catch((err) => {
-    logger.error({ err }, 'Migration runner failed');
-    process.exit(1);
-  });
+// Run if called directly (not when imported)
+if (require.main === module) {
+  runMigrations()
+    .then(() => process.exit(0))
+    .catch((err) => {
+      logger.error({ err }, 'Migration runner failed');
+      process.exit(1);
+    });
+}
 
 export { runMigrations };

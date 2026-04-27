@@ -271,18 +271,30 @@ function createApp() {
     // ─── API Routes ───
     const api = config_1.config.app.apiPrefix;
     app.use(`${api}/cards`, routes_1.cardRoutes);
-    // ─── Frontend ───
-    const frontendPath = "/home/u166243786/domains/qr.buildigo.org/public_html/.builds/source/frontend/dist";
-    app.use(express_1.default.static(frontendPath));
-    app.get("/card/:id", (_req, res) => {
-        res.sendFile(path_1.default.join(frontendPath, "index.html"));
-    });
-    app.get(/(.*)/, (_req, res) => {
-        res.sendFile(path_1.default.join(frontendPath, "index.html"));
-    });
-    // ─── Error Handling - BILKUL LAST MEIN ───
+    // ─── Frontend Static Files ───
+    // FRONTEND_PATH env var se set karo, ya Hostinger default use karo
+    const frontendPath = process.env.FRONTEND_PATH ||
+        '/home/u166243786/domains/qr.buildigo.org/public_html/.builds/source/frontend/dist';
+    const fs = require('fs');
+    const frontendExists = fs.existsSync(frontendPath);
+    if (frontendExists) {
+        app.use(express_1.default.static(frontendPath));
+        // SPA fallback — all non-API routes serve index.html (Express 5 requires regex, not '*')
+        app.get(/(.*)/, (_req, res) => {
+            res.sendFile(path_1.default.join(frontendPath, 'index.html'));
+        });
+    }
+    else {
+        // Frontend not deployed here — API-only mode
+        app.get(/(.*)/, (_req, res) => {
+            res.status(404).json({
+                success: false,
+                message: 'Frontend not found. Set FRONTEND_PATH or deploy frontend to the correct path.',
+            });
+        });
+    }
+    // ─── Error Handling ───
     app.use(error_handler_1.errorHandler);
-    // notFoundHandler BILKUL MAT DAALO - app.get("*") handle kar raha hai
     return app;
 }
 //# sourceMappingURL=app.js.map

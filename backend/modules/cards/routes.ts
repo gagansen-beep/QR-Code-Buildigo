@@ -32,17 +32,18 @@ router.post('/admin/all',          CardController.adminGetAll);
 router.put('/admin/:id',  upload.single('image'), CardController.adminUpdate);
 router.delete('/admin/:id',        CardController.adminRemove);
 
-// Public routes
+// Contact routes (must come before /:id to avoid param capture)
+router.post('/contact/create', ContactController.createContact);
+router.get('/contact',         ContactController.getAllContact);
+router.put('/contact/:id',     ContactController.getByIdContact);
+router.delete('/contact/:id',  ContactController.deleteContact);
+
+// Public card routes
 router.get('/',        CardController.publicGetAll);
 router.post('/',       upload.single('image'), CardController.create);
 router.get('/:id',     CardController.getById);
 router.put('/:id',     upload.single('image'), CardController.update);
 router.delete('/:id',  CardController.remove);
-
-router.post('/contact/create',ContactController.createContact);
-router.get('/contact/',ContactController.getAllContact);
-router.put('/contact/:id',ContactController.getByIdContact);
-router.delete('/contact/:id',ContactController.deleteContact);
 
 
 export { router as cardRoutes };

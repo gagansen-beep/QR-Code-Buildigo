@@ -1,38 +1,31 @@
 version: '3.9'
 
-# Backend-only compose (for local dev without nginx).
-# For production use the root docker-compose.yml instead.
-
 services:
   postgres:
     image: postgres:16-alpine
     container_name: qrcode_postgres
     restart: unless-stopped
     environment:
-      POSTGRES_DB: QRCode
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres_dev_password
-    ports:
-      - "5432:5432"
+      POSTGRES_DB: ${DB_NAME:-QRCode}
+      POSTGRES_USER: ${DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-changeme}
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-postgres}"]
       interval: 10s
       timeout: 5s
       retries: 5
 
-  api:
+  backend:
     build:
-      context: .
+      context: ./backend
       dockerfile: Dockerfile
-    container_name: qrcode_api
+    container_name: qrcode_backend
     restart: unless-stopped
     depends_on:
       postgres:
         condition: service_healthy
-    ports:
-      - "3005:3005"
     environment:
       NODE_ENV: production
       PORT: 3005
@@ -40,23 +33,36 @@ services:
       APP_NAME: QRCode
       DB_HOST: postgres
       DB_PORT: 5432
-      DB_NAME: QRCode
-      DB_USER: postgres
-      DB_PASSWORD: postgres_dev_password
+      DB_NAME: ${DB_NAME:-QRCode}
+      DB_USER: ${DB_USER:-postgres}
+      DB_PASSWORD: ${DB_PASSWORD:-changeme}
       DB_POOL_MIN: 2
       DB_POOL_MAX: 20
       DB_SSL: "false"
-      CORS_ORIGINS: https://qr.buildigo.org,http://localhost:5173,http://localhost
+      CORS_ORIGINS: ${CORS_ORIGINS:-https://qr.buildigo.org,http://localhost}
       RATE_LIMIT_WINDOW_MS: "60000"
       RATE_LIMIT_MAX_REQUESTS: "200"
       STORAGE_BASE_PATH: /app/uploads
       MAX_FILE_SIZE_MB: "10"
       LOG_LEVEL: info
-      FRONTEND_URL: https://qr.buildigo.org
-      ADMIN_EMAIL: admin@example.com
-      ADMIN_PASSWORD: change_this_password
+      FRONTEND_URL: ${FRONTEND_URL:-https://qr.buildigo.org}
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@example.com}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-changeme}
     volumes:
       - uploads:/app/uploads
+    expose:
+      - "3005"
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: qrcode_frontend
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
 
 volumes:
   pgdata:
