@@ -89,18 +89,54 @@ function getInitialState() {
 }
 
 // ── View → URL mapping ────────────────────────────────────────────────────────
+// function viewToPath(nextView, nextData = {}) {
+//   switch (nextView) {
+//     case 'home':          return '/';
+//     case 'create':        return '/create';
+//     case 'booking-table': return '/my-cards';
+//     case 'preview':       return '/preview';
+//     case 'qrshow':        return '/qrshow';
+//     case 'card-view':
+//       // isScan hai toh URL /card/:id rakho, warna same rakho
+//       return nextData?.card?.id ? `/card/${nextData.card.id}` : '/';
+//     case 'card-loading':
+//       return nextData?.cardId ? `/card/${nextData.cardId}` : '/';
+//     default:
+//       return '/';
+
+//   }
+// }
+
+// ── View → URL mapping ────────────────────────────────────────────────────────
 function viewToPath(nextView, nextData = {}) {
+  const baseUrl = "https://qr.buildigo.org";
+
   switch (nextView) {
-    case 'home':          return '/';
-    case 'create':        return '/create';
-    case 'booking-table': return '/my-cards';
-    case 'preview':       return '/preview';
-    case 'qrshow':        return '/qrshow';
+    case 'home':          
+      return '/';
+
+    case 'create':        
+      return '/create';
+
+    case 'booking-table': 
+      return '/my-cards';
+
+    case 'preview':       
+      return '/preview';
+
+    case 'qrshow':        
+      return '/qrshow';
+
     case 'card-view':
-      // isScan hai toh URL /card/:id rakho, warna same rakho
-      return nextData?.card?.id ? `/card/${nextData.card.id}` : '/';
+      return nextData?.card?.id
+        ? `${baseUrl}/card/${nextData.card.id}`
+        : baseUrl;
+
     case 'card-loading':
-      return nextData?.cardId ? `/card/${nextData.cardId}` : '/';
+      return nextData?.cardId
+        ? `${baseUrl}/card/${nextData.cardId}`
+        : baseUrl;
+
     default:
       return '/';
   }
