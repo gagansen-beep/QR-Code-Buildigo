@@ -188,7 +188,6 @@
 // }
 
 
-
 import express from "express";
 import cors from "cors";
 import helmet from "helmet";
@@ -197,37 +196,24 @@ import rateLimit from "express-rate-limit";
 import path from "path";
 
 import { config } from "./middleware/config";
-import {
-  requestIdMiddleware,
-  requestLogger,
-} from "./middleware/request-logger";
+import { requestIdMiddleware, requestLogger } from "./middleware/request-logger";
 import { errorHandler } from "./middleware/error-handler";
 import { cardRoutes } from "./modules/cards/routes";
 
 export function createApp(): express.Application {
   const app = express();
 
-  // ─── Trust Proxy (Hostinger ke liye ZAROORI) ───
   app.set("trust proxy", 1);
 
-  // ─── Global Middleware ───
-  app.use(
-    helmet({
-      crossOriginResourcePolicy: { policy: "cross-origin" },
-    })
-  );
+  app.use(helmet({ crossOriginResourcePolicy: { policy: "cross-origin" } }));
 
-  app.use(
-    cors({
-      origin: config.cors.origins,
-      methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-      allowedHeaders: ["Content-Type", "X-Request-ID"],
-    })
-  );
+  app.use(cors({
+    origin: config.cors.origins,
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "X-Request-ID"],
+  }));
 
-  // Static uploads
-  app.use(
-    "/uploads",
+  app.use("/uploads",
     (_req, res, next) => {
       res.setHeader("Cross-Origin-Resource-Policy", "cross-origin");
       next();
@@ -241,25 +227,17 @@ export function createApp(): express.Application {
   app.use(requestIdMiddleware);
   app.use(requestLogger);
 
-  // Rate limiting
-  const limiter = rateLimit({
+  app.use(rateLimit({
     windowMs: config.rateLimit.windowMs,
     max: config.rateLimit.maxRequests,
     standardHeaders: true,
     legacyHeaders: false,
-    message: {
-      success: false,
-      message: "Too many requests, please try again later",
-    },
-  });
+    message: { success: false, message: "Too many requests" },
+  }));
 
-  app.use(limiter);
-
-  // ─── Health Check ───
   app.get("/health", async (_req, res) => {
     const { healthCheck } = await import("./middleware/database/connection");
     const dbHealthy = await healthCheck();
-
     res.status(dbHealthy ? 200 : 503).json({
       status: dbHealthy ? "healthy" : "unhealthy",
       timestamp: new Date().toISOString(),
@@ -268,57 +246,17 @@ export function createApp(): express.Application {
     });
   });
 
-
-
-  // ─────────────────────────────────────────────
-  // FRONTEND SERVE (HOSTINGER)
-  // ─────────────────────────────────────────────
-  // const frontendPath = path.join(
-  //   process.cwd(),
-  //   "..",
-  //   "public_html",
-  //   ".builds",
-  //   "source",
-  //   "frontend",
-  //   "dist"
-  // );
-
-  // app.use(express.static(frontendPath));
-  // app.get(/(.*)/, (_req, res) => {
-  //   res.sendFile(path.join(frontendPath, "index.html"));
-  // });
-  
   // ─── API Routes ───
   const api = config.app.apiPrefix;
   app.use(`${api}/cards`, cardRoutes);
 
-  // ─── Frontend Static Files ───
-  // FRONTEND_PATH env var se set karo, ya Hostinger default use karo
-  const frontendPath =
-    process.env.FRONTEND_PATH ||
-    '/home/u166243786/domains/qr.buildigo.org/public_html/.builds/source/frontend/dist';
+  // ─── Frontend ───
+  const frontendPath = "/home/u166243786/domains/qr.buildigo.org/public_html/.builds/source/frontend/dist";
+  app.use(express.static(frontendPath));
+  app.use((_req, res) => {
+    res.sendFile(path.join(frontendPath, "index.html"));
+  });
 
-  const fs = require('fs') as typeof import('fs');
-  const frontendExists = fs.existsSync(frontendPath);
-
-  if (frontendExists) {
-    app.use(express.static(frontendPath));
-
-    // SPA fallback — all non-API routes serve index.html (Express 5 requires regex, not '*')
-    app.get(/(.*)/, (_req, res) => {
-      res.sendFile(path.join(frontendPath, 'index.html'));
-    });
-  } else {
-    // Frontend not deployed here — API-only mode
-    app.get(/(.*)/, (_req, res) => {
-      res.status(404).json({
-        success: false,
-        message: 'Frontend not found. Set FRONTEND_PATH or deploy frontend to the correct path.',
-      });
-    });
-  }
-
-  // ─── Error Handling ───
   app.use(errorHandler);
 
   return app;
