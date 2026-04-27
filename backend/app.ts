@@ -195,6 +195,7 @@ import helmet from "helmet";
 import compression from "compression";
 import rateLimit from "express-rate-limit";
 import path from "path";
+import fs from "fs";
 
 import { config } from "./middleware/config";
 import {
@@ -203,6 +204,7 @@ import {
 } from "./middleware/request-logger";
 import { errorHandler } from "./middleware/error-handler";
 import { cardRoutes } from "./modules/cards/routes";
+import { logger } from "./middleware/config/logger";
 
 export function createApp(): express.Application {
   const app = express();
@@ -293,27 +295,45 @@ export function createApp(): express.Application {
   app.use(`${api}/cards`, cardRoutes);
 
   // ─── Frontend Static Files ───
-  // FRONTEND_PATH env var se set karo, ya Hostinger default use karo
-  const frontendPath =
-    process.env.FRONTEND_PATH ||
-    '/home/u166243786/domains/qr.buildigo.org/public_html/.builds/source/frontend/dist';
+  // Passenger AppRoot = nodejs/  →  __dirname = nodejs/dist/  →  process.cwd() = nodejs/
+  // Check candidates in priority order so it works on Hostinger, Docker, and local dev.
+  const frontendCandidates = [
+    // 1. Explicit env override (set this in Hostinger Node.js → Environment Variables)
+    process.env.FRONTEND_PATH,
+    // 2. RECOMMENDED on Hostinger: put frontend dist/ contents into nodejs/public/
+    path.join(__dirname, '..', 'public'),
+    // 3. nodejs/frontend/dist/  (alternative Hostinger placement)
+    path.join(__dirname, '..', 'frontend', 'dist'),
+    // 4. Hostinger web root public_html/ (if Apache also serves frontend there)
+    path.join(process.cwd(), '..', 'public_html'),
+    // 5. Legacy hardcoded Hostinger path
+    '/home/u166243786/domains/qr.buildigo.org/public_html/.builds/source/frontend/dist',
+    // 6. Docker: frontend built into backend container at ./public
+    path.join(process.cwd(), 'public'),
+  ].filter(Boolean) as string[];
 
-  const fs = require('fs') as typeof import('fs');
-  const frontendExists = fs.existsSync(frontendPath);
+  const frontendPath = frontendCandidates.find(
+    (p) => fs.existsSync(path.join(p, 'index.html'))
+  ) ?? null;
 
-  if (frontendExists) {
+  if (frontendPath) {
+    logger.info({ frontendPath }, 'Serving frontend from path');
     app.use(express.static(frontendPath));
 
-    // SPA fallback — all non-API routes serve index.html (Express 5 requires regex, not '*')
+    // SPA fallback — all non-API routes serve index.html
+    // Express 5 requires regex wildcard, not bare '*'
     app.get(/(.*)/, (_req, res) => {
       res.sendFile(path.join(frontendPath, 'index.html'));
     });
   } else {
-    // Frontend not deployed here — API-only mode
+    logger.warn(
+      { checked: frontendCandidates },
+      'Frontend not found — set FRONTEND_PATH env var or deploy frontend dist'
+    );
     app.get(/(.*)/, (_req, res) => {
-      res.status(404).json({
+      res.status(503).json({
         success: false,
-        message: 'Frontend not found. Set FRONTEND_PATH or deploy frontend to the correct path.',
+        message: 'Frontend not deployed. Set FRONTEND_PATH env var.',
       });
     });
   }

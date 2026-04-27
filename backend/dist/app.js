@@ -202,10 +202,12 @@ const helmet_1 = __importDefault(require("helmet"));
 const compression_1 = __importDefault(require("compression"));
 const express_rate_limit_1 = __importDefault(require("express-rate-limit"));
 const path_1 = __importDefault(require("path"));
+const fs_1 = __importDefault(require("fs"));
 const config_1 = require("./middleware/config");
 const request_logger_1 = require("./middleware/request-logger");
 const error_handler_1 = require("./middleware/error-handler");
 const routes_1 = require("./modules/cards/routes");
+const logger_1 = require("./middleware/config/logger");
 function createApp() {
     const app = (0, express_1.default)();
     // ─── Trust Proxy (Hostinger ke liye ZAROORI) ───
@@ -272,24 +274,38 @@ function createApp() {
     const api = config_1.config.app.apiPrefix;
     app.use(`${api}/cards`, routes_1.cardRoutes);
     // ─── Frontend Static Files ───
-    // FRONTEND_PATH env var se set karo, ya Hostinger default use karo
-    const frontendPath = process.env.FRONTEND_PATH ||
-        '/home/u166243786/domains/qr.buildigo.org/public_html/.builds/source/frontend/dist';
-    const fs = require('fs');
-    const frontendExists = fs.existsSync(frontendPath);
-    if (frontendExists) {
+    // Passenger AppRoot = nodejs/  →  __dirname = nodejs/dist/  →  process.cwd() = nodejs/
+    // Check candidates in priority order so it works on Hostinger, Docker, and local dev.
+    const frontendCandidates = [
+        // 1. Explicit env override (set this in Hostinger Node.js → Environment Variables)
+        process.env.FRONTEND_PATH,
+        // 2. RECOMMENDED on Hostinger: put frontend dist/ contents into nodejs/public/
+        path_1.default.join(__dirname, '..', 'public'),
+        // 3. nodejs/frontend/dist/  (alternative Hostinger placement)
+        path_1.default.join(__dirname, '..', 'frontend', 'dist'),
+        // 4. Hostinger web root public_html/ (if Apache also serves frontend there)
+        path_1.default.join(process.cwd(), '..', 'public_html'),
+        // 5. Legacy hardcoded Hostinger path
+        '/home/u166243786/domains/qr.buildigo.org/public_html/.builds/source/frontend/dist',
+        // 6. Docker: frontend built into backend container at ./public
+        path_1.default.join(process.cwd(), 'public'),
+    ].filter(Boolean);
+    const frontendPath = frontendCandidates.find((p) => fs_1.default.existsSync(path_1.default.join(p, 'index.html'))) ?? null;
+    if (frontendPath) {
+        logger_1.logger.info({ frontendPath }, 'Serving frontend from path');
         app.use(express_1.default.static(frontendPath));
-        // SPA fallback — all non-API routes serve index.html (Express 5 requires regex, not '*')
+        // SPA fallback — all non-API routes serve index.html
+        // Express 5 requires regex wildcard, not bare '*'
         app.get(/(.*)/, (_req, res) => {
             res.sendFile(path_1.default.join(frontendPath, 'index.html'));
         });
     }
     else {
-        // Frontend not deployed here — API-only mode
+        logger_1.logger.warn({ checked: frontendCandidates }, 'Frontend not found — set FRONTEND_PATH env var or deploy frontend dist');
         app.get(/(.*)/, (_req, res) => {
-            res.status(404).json({
+            res.status(503).json({
                 success: false,
-                message: 'Frontend not found. Set FRONTEND_PATH or deploy frontend to the correct path.',
+                message: 'Frontend not deployed. Set FRONTEND_PATH env var.',
             });
         });
     }
