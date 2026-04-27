@@ -51,40 +51,52 @@ const routes_1 = require("./modules/cards/routes");
 const logger_1 = require("./middleware/config/logger");
 function createApp() {
     const app = (0, express_1.default)();
-    // ─── Trust Proxy (Hostinger ke liye ZAROORI) ───
+    // Required for Hostinger Passenger — reads correct client IP from X-Forwarded-For
     app.set("trust proxy", 1);
-    // ─── Global Middleware ───
+    // ─── Security ────────────────────────────────────────────────────────────────
     app.use((0, helmet_1.default)({
         crossOriginResourcePolicy: { policy: "cross-origin" },
+        contentSecurityPolicy: {
+            directives: {
+                defaultSrc: ["'self'"],
+                scriptSrc: ["'self'"],
+                styleSrc: ["'self'", "'unsafe-inline'", "https:"],
+                // data: is required so <img src="data:image/png;base64,..."> (QR codes) render
+                imgSrc: ["'self'", "data:", "blob:", "https:"],
+                fontSrc: ["'self'", "https:", "data:"],
+                connectSrc: ["'self'", "https:"],
+                objectSrc: ["'none'"],
+                baseUri: ["'self'"],
+                formAction: ["'self'"],
+            },
+        },
     }));
     app.use((0, cors_1.default)({
         origin: config_1.config.cors.origins,
         methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
         allowedHeaders: ["Content-Type", "X-Request-ID"],
     }));
-    // Static uploads
+    // ─── Body / Compression ──────────────────────────────────────────────────────
+    app.use((0, compression_1.default)());
+    app.use(express_1.default.json({ limit: "10mb" }));
+    app.use(express_1.default.urlencoded({ extended: true }));
+    // ─── Logging / Request ID ────────────────────────────────────────────────────
+    app.use(request_logger_1.requestIdMiddleware);
+    app.use(request_logger_1.requestLogger);
+    // ─── Uploaded Files ──────────────────────────────────────────────────────────
     app.use("/uploads", (_req, res, next) => {
         res.setHeader("Cross-Origin-Resource-Policy", "cross-origin");
         next();
     }, express_1.default.static(path_1.default.join(process.cwd(), config_1.config.storage.basePath)));
-    app.use((0, compression_1.default)());
-    app.use(express_1.default.json({ limit: "10mb" }));
-    app.use(express_1.default.urlencoded({ extended: true }));
-    app.use(request_logger_1.requestIdMiddleware);
-    app.use(request_logger_1.requestLogger);
-    // Rate limiting
-    const limiter = (0, express_rate_limit_1.default)({
+    // ─── Rate Limiting ───────────────────────────────────────────────────────────
+    app.use((0, express_rate_limit_1.default)({
         windowMs: config_1.config.rateLimit.windowMs,
         max: config_1.config.rateLimit.maxRequests,
         standardHeaders: true,
         legacyHeaders: false,
-        message: {
-            success: false,
-            message: "Too many requests, please try again later",
-        },
-    });
-    app.use(limiter);
-    // ─── Health Check ───
+        message: { success: false, message: "Too many requests, please try again later" },
+    }));
+    // ─── Health Check ────────────────────────────────────────────────────────────
     app.get("/health", async (_req, res) => {
         const { healthCheck } = await Promise.resolve().then(() => __importStar(require("./middleware/database/connection")));
         const dbHealthy = await healthCheck();
@@ -95,63 +107,82 @@ function createApp() {
             database: dbHealthy ? "connected" : "disconnected",
         });
     });
-    // ─────────────────────────────────────────────
-    // FRONTEND SERVE (HOSTINGER)
-    // ─────────────────────────────────────────────
-    // const frontendPath = path.join(
-    //   process.cwd(),
-    //   "..",
-    //   "public_html",
-    //   ".builds",
-    //   "source",
-    //   "frontend",
-    //   "dist"
-    // );
-    // app.use(express.static(frontendPath));
-    // app.get(/(.*)/, (_req, res) => {
-    //   res.sendFile(path.join(frontendPath, "index.html"));
-    // });
-    // ─── API Routes ───
-    const api = config_1.config.app.apiPrefix;
-    app.use(`${api}/cards`, routes_1.cardRoutes);
-    // ─── Frontend Static Files ───
-    // Passenger AppRoot = nodejs/  →  __dirname = nodejs/dist/  →  process.cwd() = nodejs/
-    // Check candidates in priority order so it works on Hostinger, Docker, and local dev.
-    const frontendCandidates = [
-        // 1. Explicit env override (set this in Hostinger Node.js → Environment Variables)
-        process.env.FRONTEND_PATH,
-        // 2. RECOMMENDED on Hostinger: put frontend dist/ contents into nodejs/public/
-        path_1.default.join(__dirname, '..', 'public'),
-        // 3. nodejs/frontend/dist/  (alternative Hostinger placement)
-        path_1.default.join(__dirname, '..', 'frontend', 'dist'),
-        // 4. Hostinger web root public_html/ (if Apache also serves frontend there)
-        path_1.default.join(process.cwd(), '..', 'public_html'),
-        // 5. Legacy hardcoded Hostinger path
-        '/home/u166243786/domains/qr.buildigo.org/public_html/.builds/source/frontend/dist',
-        // 6. Docker: frontend built into backend container at ./public
-        path_1.default.join(process.cwd(), 'public'),
-    ].filter(Boolean);
-    const frontendPath = frontendCandidates.find((p) => fs_1.default.existsSync(path_1.default.join(p, 'index.html'))) ?? null;
+    // ─── API Routes (must come before SPA fallback) ──────────────────────────────
+    app.use(`${config_1.config.app.apiPrefix}/cards`, routes_1.cardRoutes);
+    // ─── Frontend + SPA Fallback ─────────────────────────────────────────────────
+    // Resolve the first readable frontend path from the candidate list.
+    // On Hostinger: set FRONTEND_PATH=/home/<user>/domains/<domain>/nodejs/public
+    const frontendPath = resolveFrontendPath();
     if (frontendPath) {
-        logger_1.logger.info({ frontendPath }, 'Serving frontend from path');
-        app.use(express_1.default.static(frontendPath));
-        // SPA fallback — all non-API routes serve index.html
-        // Express 5 requires regex wildcard, not bare '*'
+        const indexHtml = path_1.default.join(frontendPath, "index.html");
+        logger_1.logger.info({ frontendPath, indexHtml }, "Serving frontend static files");
+        // Serve JS/CSS/images with default caching.
+        // index:false so every HTML request (including /) goes through the SPA fallback below.
+        app.use(express_1.default.static(frontendPath, { index: false }));
+        // SPA fallback ─ any GET that is not an API route or a real file gets index.html.
+        // React Router then handles /card/:uuid, /admin, etc. on the client.
         app.get(/(.*)/, (_req, res) => {
-            res.sendFile(path_1.default.join(frontendPath, 'index.html'));
-        });
-    }
-    else {
-        logger_1.logger.warn({ checked: frontendCandidates }, 'Frontend not found — set FRONTEND_PATH env var or deploy frontend dist');
-        app.get(/(.*)/, (_req, res) => {
-            res.status(503).json({
-                success: false,
-                message: 'Frontend not deployed. Set FRONTEND_PATH env var.',
+            res.sendFile(indexHtml, (err) => {
+                if (err) {
+                    logger_1.logger.error({ err, indexHtml }, "SPA fallback: sendFile failed");
+                    if (!res.headersSent) {
+                        res.status(503).json({
+                            success: false,
+                            message: "Frontend unavailable. Check FRONTEND_PATH env var or server logs.",
+                        });
+                    }
+                }
             });
         });
     }
-    // ─── Error Handling ───
+    else {
+        logger_1.logger.warn("Frontend not found — set FRONTEND_PATH env var");
+        app.get(/(.*)/, (_req, res) => {
+            res.status(503).json({
+                success: false,
+                message: "Frontend not deployed. Set FRONTEND_PATH=/absolute/path/to/frontend/dist",
+            });
+        });
+    }
+    // ─── Global Error Handler ────────────────────────────────────────────────────
     app.use(error_handler_1.errorHandler);
     return app;
+}
+/**
+ * Walk candidate paths and return the first one whose index.html is readable
+ * by the current process. Uses fs.accessSync (checks real read permission)
+ * instead of existsSync (only checks inode existence, not permissions).
+ */
+function resolveFrontendPath() {
+    const cwd = process.cwd(); // nodejs/          (Passenger app root)
+    const dir = __dirname; // nodejs/dist/     (compiled output dir)
+    const candidates = [
+        // 1. Explicit env override — set this in Hostinger → Node.js → Environment Variables
+        //    FRONTEND_PATH=/home/<user>/domains/<domain>/nodejs/public
+        process.env.FRONTEND_PATH ?? "",
+        // 2. nodejs/public/  ← recommended: copy frontend/dist/* here before deploying
+        path_1.default.join(cwd, "public"),
+        // 3. nodejs/dist/../public = nodejs/public/  (same as 2, different resolution)
+        path_1.default.join(dir, "..", "public"),
+        // 4. nodejs/frontend/dist/  (alternative layout)
+        path_1.default.join(cwd, "frontend", "dist"),
+        // 5. nodejs/dist/../frontend/dist/
+        path_1.default.join(dir, "..", "frontend", "dist"),
+        // 6. Hostinger domain root public_html/ (only works if Passenger can read it)
+        path_1.default.join(cwd, "..", "public_html"),
+    ].filter(Boolean);
+    logger_1.logger.info({ cwd, dir }, "Resolving frontend path");
+    for (const p of candidates) {
+        const indexPath = path_1.default.join(p, "index.html");
+        try {
+            fs_1.default.accessSync(indexPath, fs_1.default.constants.R_OK);
+            return p;
+        }
+        catch {
+            // not readable — try next
+        }
+    }
+    logger_1.logger.warn({ candidates }, "No readable frontend/index.html found");
+    return null;
 }
 //# sourceMappingURL=app.js.map
