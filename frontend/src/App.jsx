@@ -97,6 +97,7 @@ function viewToPath(nextView, nextData = {}) {
     case 'preview':       return '/preview';
     case 'qrshow':        return '/qrshow';
     case 'card-view':
+      // isScan hai toh URL /card/:id rakho, warna same rakho
       return nextData?.card?.id ? `/card/${nextData.card.id}` : '/';
     case 'card-loading':
       return nextData?.cardId ? `/card/${nextData.cardId}` : '/';
