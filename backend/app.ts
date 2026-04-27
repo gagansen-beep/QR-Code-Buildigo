@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 // import express from "express";
 // import cors from "cors";
 // import helmet from "helmet";
@@ -188,12 +189,15 @@
 // }
 
 
+=======
+>>>>>>> 9afc19a25287bc16ba8734d8df2f8cb4de05592e
 import express from "express";
 import cors from "cors";
 import helmet from "helmet";
 import compression from "compression";
 import rateLimit from "express-rate-limit";
 import path from "path";
+import fs from "fs";
 
 import { config } from "./middleware/config";
 import { requestIdMiddleware, requestLogger } from "./middleware/request-logger";
@@ -205,7 +209,15 @@ export function createApp(): express.Application {
 
   app.set("trust proxy", 1);
 
+<<<<<<< HEAD
   app.use(helmet({ crossOriginResourcePolicy: { policy: "cross-origin" } }));
+=======
+  app.use(
+    helmet({
+      crossOriginResourcePolicy: { policy: "cross-origin" },
+    })
+  );
+>>>>>>> 9afc19a25287bc16ba8734d8df2f8cb4de05592e
 
   app.use(cors({
     origin: config.cors.origins,
@@ -213,7 +225,12 @@ export function createApp(): express.Application {
     allowedHeaders: ["Content-Type", "X-Request-ID"],
   }));
 
+<<<<<<< HEAD
   app.use("/uploads",
+=======
+  app.use(
+    "/uploads",
+>>>>>>> 9afc19a25287bc16ba8734d8df2f8cb4de05592e
     (_req, res, next) => {
       res.setHeader("Cross-Origin-Resource-Policy", "cross-origin");
       next();
@@ -227,13 +244,26 @@ export function createApp(): express.Application {
   app.use(requestIdMiddleware);
   app.use(requestLogger);
 
+<<<<<<< HEAD
   app.use(rateLimit({
+=======
+  const limiter = rateLimit({
+>>>>>>> 9afc19a25287bc16ba8734d8df2f8cb4de05592e
     windowMs: config.rateLimit.windowMs,
     max: config.rateLimit.maxRequests,
     standardHeaders: true,
     legacyHeaders: false,
+<<<<<<< HEAD
     message: { success: false, message: "Too many requests" },
   }));
+=======
+    message: {
+      success: false,
+      message: "Too many requests, please try again later",
+    },
+  });
+  app.use(limiter);
+>>>>>>> 9afc19a25287bc16ba8734d8df2f8cb4de05592e
 
   app.get("/health", async (_req, res) => {
     const { healthCheck } = await import("./middleware/database/connection");
@@ -246,6 +276,7 @@ export function createApp(): express.Application {
     });
   });
 
+<<<<<<< HEAD
   // ─── API Routes ───
   const api = config.app.apiPrefix;
   app.use(`${api}/cards`, cardRoutes);
@@ -257,6 +288,29 @@ export function createApp(): express.Application {
     res.sendFile(path.join(frontendPath, "index.html"));
   });
 
+=======
+  const api = config.app.apiPrefix;
+  app.use(`${api}/cards`, cardRoutes);
+
+  const frontendPath =
+    process.env.FRONTEND_PATH ||
+    "/home/u166243786/domains/qr.buildigo.org/public_html/.builds/source/frontend/dist";
+
+  if (fs.existsSync(frontendPath)) {
+    app.use(express.static(frontendPath));
+    app.get(/(.*)/, (_req, res) => {
+      res.sendFile(path.join(frontendPath, "index.html"));
+    });
+  } else {
+    app.get(/(.*)/, (_req, res) => {
+      res.status(404).json({
+        success: false,
+        message: "Frontend not found. Set FRONTEND_PATH env var to the absolute path of your frontend dist/.",
+      });
+    });
+  }
+
+>>>>>>> 9afc19a25287bc16ba8734d8df2f8cb4de05592e
   app.use(errorHandler);
 
   return app;
