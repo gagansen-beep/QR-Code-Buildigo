@@ -274,7 +274,7 @@ function createApp() {
     // ─── Frontend ───
     const frontendPath = "/home/u166243786/domains/qr.buildigo.org/public_html/.builds/source/frontend/dist";
     app.use(express_1.default.static(frontendPath));
-    app.use("/card/:id", (_req, res) => {
+    app.get("/card/:id", (_req, res) => {
         res.sendFile(path_1.default.join(frontendPath, "index.html"));
     });
     app.get(/(.*)/, (_req, res) => {
