@@ -297,6 +297,10 @@ const frontendPath = "/home/u166243786/domains/qr.buildigo.org/public_html/.buil
 
 app.use(express.static(frontendPath));
 
+app.use("/card/:id",(_req, res)=>{
+res.sendFile(path.join(frontendPath, "index.html"));
+})
+
 app.get(/(.*)/, (_req, res) => {
   res.sendFile(path.join(frontendPath, "index.html"));
 });
