@@ -173,7 +173,7 @@ export function createApp(): express.Application {
   // ─── Frontend Static Files ───
   // __dirname = backend/dist/ on Hostinger
   // frontend/dist is placed inside backend/dist/frontend/dist/
-const frontendPath = path.join(__dirname, "../../frontend/dist");
+const frontendPath = "/home/u166243786/domains/qr.buildigo.org/public_html/.builds/source/frontend/dist";
 
 app.use(express.static(frontendPath));
 
