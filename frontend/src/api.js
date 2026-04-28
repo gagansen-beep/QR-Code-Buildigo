@@ -71,6 +71,7 @@ export const api = {
 
   /** Fetch a single card by ID (public) */
   getCard: (id) => request('GET', `/${id}`),
+  
 
   /** Get all cards (public) — returns { data, total, page, limit } */
   getAllCards: (page = 1, limit = 10, email = '', phone = '') => {
