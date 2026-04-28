@@ -50,28 +50,34 @@ const routes_1 = require("./modules/cards/routes");
 function createApp() {
     const app = (0, express_1.default)();
     app.set("trust proxy", 1);
+    // ─── Security ───
     app.use((0, helmet_1.default)({ crossOriginResourcePolicy: { policy: "cross-origin" } }));
     app.use((0, cors_1.default)({
         origin: config_1.config.cors.origins,
         methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
         allowedHeaders: ["Content-Type", "X-Request-ID"],
+        credentials: true,
     }));
+    // ─── Static Uploads ───
     app.use("/uploads", (_req, res, next) => {
         res.setHeader("Cross-Origin-Resource-Policy", "cross-origin");
         next();
     }, express_1.default.static(path_1.default.join(process.cwd(), config_1.config.storage.basePath)));
+    // ─── Middleware ───
     app.use((0, compression_1.default)());
     app.use(express_1.default.json({ limit: "10mb" }));
     app.use(express_1.default.urlencoded({ extended: true }));
     app.use(request_logger_1.requestIdMiddleware);
     app.use(request_logger_1.requestLogger);
+    // ─── Rate Limiting ───
     app.use((0, express_rate_limit_1.default)({
         windowMs: config_1.config.rateLimit.windowMs,
         max: config_1.config.rateLimit.maxRequests,
         standardHeaders: true,
         legacyHeaders: false,
-        message: { success: false, message: "Too many requests" },
+        message: { success: false, message: "Too many requests, please try again later" },
     }));
+    // ─── Health Check ───
     app.get("/health", async (_req, res) => {
         const { healthCheck } = await Promise.resolve().then(() => __importStar(require("./middleware/database/connection")));
         const dbHealthy = await healthCheck();
@@ -85,16 +91,19 @@ function createApp() {
     // ─── API Routes ───
     const api = config_1.config.app.apiPrefix;
     app.use(`${api}/cards`, routes_1.cardRoutes);
-    // ─── SPA Frontend ───
+    // ─── SPA Frontend Serving ───
     const frontendPath = "/home/u166243786/domains/qr.buildigo.org/public_html/.builds/source/frontend/dist";
     const indexHtml = path_1.default.join(frontendPath, "index.html");
+    // Serve static assets (JS, CSS, images)
     app.use(express_1.default.static(frontendPath, { index: false }));
-    app.use((_req, res, next) => {
+    // All remaining routes → serve index.html (React handles routing in browser)
+    app.get("*", (_req, res, next) => {
         res.sendFile(indexHtml, (err) => {
             if (err)
                 next(err);
         });
     });
+    // ─── Error Handler ───
     app.use(error_handler_1.errorHandler);
     return app;
 }

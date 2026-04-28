@@ -9,7 +9,6 @@ import { CardViewPage } from './components/CardViewPage.jsx';
 import { CardLoader } from './components/CardLoader.jsx';
 import './App.css';
 
-// ── Root ──────────────────────────────────────────────────────────────────────
 export default function App() {
   return (
     <ToastProvider>
@@ -18,53 +17,36 @@ export default function App() {
   );
 }
 
-// ── URL se initial state detect karo ─────────────────────────────────────────
 function getInitialState() {
-  const path = window.location.pathname;
+  const p = window.location.pathname;
 
-  // /card/:id — QR scan, sirf yahi direct open ho sakta hai
-  const cardMatch = path.match(/^\/card\/([^/]+)/);
+  // /card/:id — direct QR scan link
+  const cardMatch = p.match(/^\/card\/([^/]+)/);
   if (cardMatch) return { view: 'card-loading', data: { cardId: cardMatch[1] } };
 
-  // Baaki sabhi pages state-dependent hain — home pe bhejo
+  // /my-cards — booking table
+  if (p === '/my-cards') return { view: 'booking-table', data: {} };
+
+  // /create — create form
+  if (p === '/create') return { view: 'create', data: {} };
+
+  // everything else → home
   return { view: 'home', data: {} };
 }
 
-// ── View → URL mapping ────────────────────────────────────────────────────────
-// FIXED: baseUrl hata diya — relative paths use karo taaki SPA fallback kaam kare
 function viewToPath(nextView, nextData = {}) {
   switch (nextView) {
-    case 'home':
-      return '/';
-
-    case 'create':
-      return '/create';
-
-    case 'booking-table':
-      return '/my-cards';
-
-    case 'preview':
-      return '/preview';
-
-    case 'qrshow':
-      return '/qrshow';
-
-    case 'card-view':
-      return nextData?.card?.id
-        ? `/card/${nextData.card.id}`
-        : '/';
-
-    case 'card-loading':
-      return nextData?.cardId
-        ? `/card/${nextData.cardId}`
-        : '/';
-
-    default:
-      return '/';
+    case 'home':          return '/';
+    case 'create':        return '/create';
+    case 'booking-table': return '/my-cards';
+    case 'preview':       return '/preview';
+    case 'qrshow':        return '/qrshow';
+    case 'card-view':     return nextData?.card?.id ? `/card/${nextData.card.id}` : '/';
+    case 'card-loading':  return nextData?.cardId   ? `/card/${nextData.cardId}`  : '/';
+    default:              return '/';
   }
 }
 
-// ── Router ────────────────────────────────────────────────────────────────────
 function Router() {
   const initial = getInitialState();
   const [view, setView] = useState(initial.view);
@@ -77,20 +59,19 @@ function Router() {
     window.history.pushState(
       { view: nextView, data: nextData },
       '',
-      viewToPath(nextView, nextData)
+      viewToPath(nextView, nextData),
     );
   }, []);
 
-  // Browser back/forward button
   useEffect(() => {
     const handlePop = (e) => {
       if (e.state?.view) {
         setView(e.state.view);
         setData(e.state.data || {});
       } else {
-        // State nahi hai (direct URL) — home pe bhejo
-        setView('home');
-        setData({});
+        const s = getInitialState();
+        setView(s.view);
+        setData(s.data);
       }
     };
     window.addEventListener('popstate', handlePop);
