@@ -173,12 +173,13 @@ export function createApp(): express.Application {
   // ─── Frontend Static Files ───
   // __dirname = backend/dist/ on Hostinger
   // frontend/dist is placed inside backend/dist/frontend/dist/
-  const frontendPath = path.join(__dirname,'public_html','.builds','source', "frontend", "dist");
+const frontendPath = path.join(__dirname, "../../frontend/dist");
 
-  app.use(express.static(frontendPath));
-  app.get(/.*/, (_req, res) => {
-    res.sendFile(path.join(frontendPath, "index.html"));
-  });
+app.use(express.static(frontendPath));
+
+app.get("*", (_req, res) => {
+  res.sendFile(path.join(frontendPath, "index.html"));
+});
 
   // ─── Error Handling ──
   app.use(errorHandler);

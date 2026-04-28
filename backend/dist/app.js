@@ -175,9 +175,9 @@ function createApp() {
     // ─── Frontend Static Files ───
     // __dirname = backend/dist/ on Hostinger
     // frontend/dist is placed inside backend/dist/frontend/dist/
-    const frontendPath = path_1.default.join(__dirname, 'public_html', '.builds', 'source', "frontend", "dist");
+    const frontendPath = path_1.default.join(__dirname, "../../frontend/dist");
     app.use(express_1.default.static(frontendPath));
-    app.get(/.*/, (_req, res) => {
+    app.get("*", (_req, res) => {
         res.sendFile(path_1.default.join(frontendPath, "index.html"));
     });
     // ─── Error Handling ──
