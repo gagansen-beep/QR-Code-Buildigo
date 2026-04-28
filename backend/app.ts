@@ -80,7 +80,7 @@ export function createApp(): express.Application {
   app.use(express.static(frontendPath, { index: false }));
 
   // All remaining routes → serve index.html (React handles routing in browser)
-  app.get("*", (_req: Request, res: Response, next: NextFunction) => {
+  app.get("/{*path}", (_req: Request, res: Response, next: NextFunction) => {
     res.sendFile(indexHtml, (err) => {
       if (err) next(err);
     });

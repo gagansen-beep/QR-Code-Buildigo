@@ -97,7 +97,7 @@ function createApp() {
     // Serve static assets (JS, CSS, images)
     app.use(express_1.default.static(frontendPath, { index: false }));
     // All remaining routes → serve index.html (React handles routing in browser)
-    app.get("*", (_req, res, next) => {
+    app.get("/{*path}", (_req, res, next) => {
         res.sendFile(indexHtml, (err) => {
             if (err)
                 next(err);
