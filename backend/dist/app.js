@@ -49,18 +49,13 @@ const error_handler_1 = require("./middleware/error-handler");
 const routes_1 = require("./modules/cards/routes");
 function createApp() {
     const app = (0, express_1.default)();
-    // ─── Trust Proxy (Hostinger ke liye ZAROORI) ───
     app.set("trust proxy", 1);
-    // ─── Global Middleware ───
-    app.use((0, helmet_1.default)({
-        crossOriginResourcePolicy: { policy: "cross-origin" },
-    }));
+    app.use((0, helmet_1.default)({ crossOriginResourcePolicy: { policy: "cross-origin" } }));
     app.use((0, cors_1.default)({
         origin: config_1.config.cors.origins,
         methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
         allowedHeaders: ["Content-Type", "X-Request-ID"],
     }));
-    // Static uploads
     app.use("/uploads", (_req, res, next) => {
         res.setHeader("Cross-Origin-Resource-Policy", "cross-origin");
         next();
@@ -70,19 +65,13 @@ function createApp() {
     app.use(express_1.default.urlencoded({ extended: true }));
     app.use(request_logger_1.requestIdMiddleware);
     app.use(request_logger_1.requestLogger);
-    // Rate limiting
-    const limiter = (0, express_rate_limit_1.default)({
+    app.use((0, express_rate_limit_1.default)({
         windowMs: config_1.config.rateLimit.windowMs,
         max: config_1.config.rateLimit.maxRequests,
         standardHeaders: true,
         legacyHeaders: false,
-        message: {
-            success: false,
-            message: "Too many requests, please try again later",
-        },
-    });
-    app.use(limiter);
-    // ─── Health Check ───
+        message: { success: false, message: "Too many requests" },
+    }));
     app.get("/health", async (_req, res) => {
         const { healthCheck } = await Promise.resolve().then(() => __importStar(require("./middleware/database/connection")));
         const dbHealthy = await healthCheck();
@@ -93,41 +82,15 @@ function createApp() {
             database: dbHealthy ? "connected" : "disconnected",
         });
     });
-    // ─────────────────────────────────────────────
-    // FRONTEND SERVE (HOSTINGER)
-    // ─────────────────────────────────────────────
-    // const frontendPath = path.join(
-    //   process.cwd(),
-    //   "..",
-    //   "public_html",
-    //   ".builds",
-    //   "source",
-    //   "frontend",
-    //   "dist"
-    // );
-    // app.use(express.static(frontendPath));
-    // app.get(/(.*)/, (_req, res) => {
-    //   res.sendFile(path.join(frontendPath, "index.html"));
-    // });
     // ─── API Routes ───
     const api = config_1.config.app.apiPrefix;
     app.use(`${api}/cards`, routes_1.cardRoutes);
     // ─── Frontend ───
-    // __dirname = backend/dist/ after tsc build
-    // frontend/dist is at ../../frontend/dist relative to __dirname
-    const frontendPath = process.env.FRONTEND_DIST_PATH ||
-        path_1.default.resolve(__dirname, '..', '..', 'frontend', 'dist');
-    console.log('[app] Serving frontend from:', frontendPath);
+    const frontendPath = "/home/u166243786/domains/qr.buildigo.org/public_html/.builds/source/frontend/dist";
     app.use(express_1.default.static(frontendPath));
-    app.get('*', (_req, res) => {
-        res.sendFile(path_1.default.join(frontendPath, 'index.html'), (err) => {
-            if (err) {
-                console.error('[app] Failed to serve index.html from:', frontendPath, err);
-                res.status(404).json({ success: false, message: 'Frontend not found. Run npm run build.' });
-            }
-        });
+    app.use((_req, res) => {
+        res.sendFile(path_1.default.join(frontendPath, "index.html"));
     });
-    // ─── Error Handling ───
     app.use(error_handler_1.errorHandler);
     return app;
 }
