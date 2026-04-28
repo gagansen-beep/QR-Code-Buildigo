@@ -1,4 +1,10 @@
 "use strict";
+// import express from "express";
+// import cors from "cors";
+// import helmet from "helmet";
+// import compression from "compression";
+// import rateLimit from "express-rate-limit";
+// import path from "path";
 var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
     if (k2 === undefined) k2 = k;
     var desc = Object.getOwnPropertyDescriptor(m, k);
@@ -37,6 +43,78 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.createApp = createApp;
+// import { config } from "./middleware/config";
+// import {
+//   requestIdMiddleware,
+//   requestLogger,
+// } from "./middleware/request-logger";
+// import { errorHandler, notFoundHandler } from "./middleware/error-handler";
+// import { cardRoutes } from "./modules/cards/routes";
+// export function createApp(): express.Application {
+//   const app = express();
+//   // ─── Global Middleware ───
+//   app.use(
+//     helmet({
+//       crossOriginResourcePolicy: { policy: "cross-origin" },
+//     }),
+//   );
+//   app.use(
+//     cors({
+//       origin: config.cors.origins,
+//       methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+//       allowedHeaders: ["Content-Type", "X-Request-ID"],
+//     }),
+//   );
+//   // Static uploads
+//   app.use(
+//     "/uploads",
+//     (_req, res, next) => {
+//       res.setHeader("Cross-Origin-Resource-Policy", "cross-origin");
+//       next();
+//     },
+//     express.static(path.join(process.cwd(), config.storage.basePath)),
+//   );
+//   app.use(compression());
+//   app.use(express.json({ limit: "10mb" }));
+//   app.use(express.urlencoded({ extended: true }));
+//   app.use(requestIdMiddleware);
+//   app.use(requestLogger);
+//   // Rate limiting
+//   const limiter = rateLimit({
+//     windowMs: config.rateLimit.windowMs,
+//     max: config.rateLimit.maxRequests,
+//     standardHeaders: true,
+//     legacyHeaders: false,
+//     message: {
+//       success: false,
+//       message: "Too many requests, please try again later",
+//     },
+//   });
+//   app.use(limiter);
+//   // ─── Health Check ───
+//   app.get("/health", async (_req, res) => {
+//     const { healthCheck } = await import("./middleware/database/connection");
+//     const dbHealthy = await healthCheck();
+//     res.status(dbHealthy ? 200 : 503).json({
+//       status: dbHealthy ? "healthy" : "unhealthy",
+//       timestamp: new Date().toISOString(),
+//       service: config.app.name,
+//       database: dbHealthy ? "connected" : "disconnected",
+//     });
+//   });
+//   // ─── Routes ───
+//   const api = config.app.apiPrefix;
+//   app.use(`${api}/cards`, cardRoutes);
+// const frontendPath = path.join(__dirname, "frontend", "dist");
+//   app.use(express.static(frontendPath));
+//   app.get(/.*/, (_req, res) => {
+//   res.sendFile(path.join(frontendPath, "index.html"));
+// });
+//   // ─── Error Handling ───
+//   app.use(notFoundHandler);
+//   app.use(errorHandler);
+//   return app;
+// }
 const express_1 = __importDefault(require("express"));
 const cors_1 = __importDefault(require("cors"));
 const helmet_1 = __importDefault(require("helmet"));
@@ -49,34 +127,37 @@ const error_handler_1 = require("./middleware/error-handler");
 const routes_1 = require("./modules/cards/routes");
 function createApp() {
     const app = (0, express_1.default)();
-    app.set("trust proxy", 1);
-    // ─── Security ───
-    app.use((0, helmet_1.default)({ crossOriginResourcePolicy: { policy: "cross-origin" } }));
+    // ─── Global Middleware ───
+    app.use((0, helmet_1.default)({
+        crossOriginResourcePolicy: { policy: "cross-origin" },
+    }));
     app.use((0, cors_1.default)({
         origin: config_1.config.cors.origins,
         methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
         allowedHeaders: ["Content-Type", "X-Request-ID"],
-        credentials: true,
     }));
-    // ─── Static Uploads ───
+    // Static uploads
     app.use("/uploads", (_req, res, next) => {
         res.setHeader("Cross-Origin-Resource-Policy", "cross-origin");
         next();
     }, express_1.default.static(path_1.default.join(process.cwd(), config_1.config.storage.basePath)));
-    // ─── Middleware ───
     app.use((0, compression_1.default)());
     app.use(express_1.default.json({ limit: "10mb" }));
     app.use(express_1.default.urlencoded({ extended: true }));
     app.use(request_logger_1.requestIdMiddleware);
     app.use(request_logger_1.requestLogger);
-    // ─── Rate Limiting ───
-    app.use((0, express_rate_limit_1.default)({
+    // Rate limiting
+    const limiter = (0, express_rate_limit_1.default)({
         windowMs: config_1.config.rateLimit.windowMs,
         max: config_1.config.rateLimit.maxRequests,
         standardHeaders: true,
         legacyHeaders: false,
-        message: { success: false, message: "Too many requests, please try again later" },
-    }));
+        message: {
+            success: false,
+            message: "Too many requests, please try again later",
+        },
+    });
+    app.use(limiter);
     // ─── Health Check ───
     app.get("/health", async (_req, res) => {
         const { healthCheck } = await Promise.resolve().then(() => __importStar(require("./middleware/database/connection")));
@@ -88,22 +169,18 @@ function createApp() {
             database: dbHealthy ? "connected" : "disconnected",
         });
     });
-    // ─── API Routes ───
+    // ─── Routes ───
     const api = config_1.config.app.apiPrefix;
     app.use(`${api}/cards`, routes_1.cardRoutes);
-    // ─── SPA Frontend Serving ───
-    const frontendPath = "/home/u166243786/domains/qr.buildigo.org/public_html/.builds/source/frontend/dist";
-    const indexHtml = path_1.default.join(frontendPath, "index.html");
-    // Serve static assets (JS, CSS, images)
-    app.use(express_1.default.static(frontendPath, { index: false }));
-    // All remaining routes → serve index.html (React handles routing in browser)
-    app.get("/{*path}", (_req, res, next) => {
-        res.sendFile(indexHtml, (err) => {
-            if (err)
-                next(err);
-        });
+    // ─── Frontend Static Files ───
+    // __dirname = backend/dist/ on Hostinger
+    // frontend/dist is placed inside backend/dist/frontend/dist/
+    const frontendPath = path_1.default.join(__dirname, 'public_html', '.builds', 'source', "frontend", "dist");
+    app.use(express_1.default.static(frontendPath));
+    app.get(/.*/, (_req, res) => {
+        res.sendFile(path_1.default.join(frontendPath, "index.html"));
     });
-    // ─── Error Handler ───
+    // ─── Error Handling ──
     app.use(error_handler_1.errorHandler);
     return app;
 }
