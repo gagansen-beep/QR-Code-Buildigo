@@ -43,55 +43,41 @@ const helmet_1 = __importDefault(require("helmet"));
 const compression_1 = __importDefault(require("compression"));
 const express_rate_limit_1 = __importDefault(require("express-rate-limit"));
 const path_1 = __importDefault(require("path"));
-const fs_1 = __importDefault(require("fs"));
 const config_1 = require("./middleware/config");
+const logger_1 = require("./middleware/config/logger");
 const request_logger_1 = require("./middleware/request-logger");
 const error_handler_1 = require("./middleware/error-handler");
 const routes_1 = require("./modules/cards/routes");
 function createApp() {
     const app = (0, express_1.default)();
     app.set("trust proxy", 1);
-<<<<<<< HEAD
+    // ─── Security ───
     app.use((0, helmet_1.default)({ crossOriginResourcePolicy: { policy: "cross-origin" } }));
-=======
-    app.use((0, helmet_1.default)({
-        crossOriginResourcePolicy: { policy: "cross-origin" },
-    }));
->>>>>>> 9afc19a25287bc16ba8734d8df2f8cb4de05592e
     app.use((0, cors_1.default)({
         origin: config_1.config.cors.origins,
         methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
         allowedHeaders: ["Content-Type", "X-Request-ID"],
     }));
+    // ─── Uploads (static images) ───
     app.use("/uploads", (_req, res, next) => {
         res.setHeader("Cross-Origin-Resource-Policy", "cross-origin");
         next();
     }, express_1.default.static(path_1.default.join(process.cwd(), config_1.config.storage.basePath)));
+    // ─── Body Parsing & Middleware ───
     app.use((0, compression_1.default)());
     app.use(express_1.default.json({ limit: "10mb" }));
     app.use(express_1.default.urlencoded({ extended: true }));
     app.use(request_logger_1.requestIdMiddleware);
     app.use(request_logger_1.requestLogger);
-<<<<<<< HEAD
+    // ─── Rate Limiting ───
     app.use((0, express_rate_limit_1.default)({
-=======
-    const limiter = (0, express_rate_limit_1.default)({
->>>>>>> 9afc19a25287bc16ba8734d8df2f8cb4de05592e
         windowMs: config_1.config.rateLimit.windowMs,
         max: config_1.config.rateLimit.maxRequests,
         standardHeaders: true,
         legacyHeaders: false,
-<<<<<<< HEAD
-        message: { success: false, message: "Too many requests" },
+        message: { success: false, message: "Too many requests, please try again later" },
     }));
-=======
-        message: {
-            success: false,
-            message: "Too many requests, please try again later",
-        },
-    });
-    app.use(limiter);
->>>>>>> 9afc19a25287bc16ba8734d8df2f8cb4de05592e
+    // ─── Health Check ───
     app.get("/health", async (_req, res) => {
         const { healthCheck } = await Promise.resolve().then(() => __importStar(require("./middleware/database/connection")));
         const dbHealthy = await healthCheck();
@@ -102,36 +88,28 @@ function createApp() {
             database: dbHealthy ? "connected" : "disconnected",
         });
     });
-<<<<<<< HEAD
     // ─── API Routes ───
     const api = config_1.config.app.apiPrefix;
     app.use(`${api}/cards`, routes_1.cardRoutes);
-    // ─── Frontend ───
-    const frontendPath = "/home/u166243786/domains/qr.buildigo.org/public_html/.builds/source/frontend/dist";
-    app.use(express_1.default.static(frontendPath));
-    app.use((_req, res) => {
-        res.sendFile(path_1.default.join(frontendPath, "index.html"));
+    // ─── SPA Frontend ───
+    // On Hostinger: __dirname = /.../.builds/source/backend/dist
+    // Going up 2 levels reaches /.../.builds/source → then frontend/dist
+    // Override with FRONTEND_DIST_PATH env var if folder structure is different
+    const frontendDist = process.env.FRONTEND_DIST_PATH ??
+        path_1.default.join(__dirname, "..", "..", "frontend", "dist");
+    const indexHtml = path_1.default.join(frontendDist, "index.html");
+    logger_1.logger.info({ frontendDist }, "Serving frontend static files from");
+    // Serve Vite build assets (JS, CSS, images, etc.)
+    app.use(express_1.default.static(frontendDist, { index: false }));
+    // SPA fallback — every non-API GET request gets index.html
+    // React reads window.location.pathname and renders the correct view
+    app.use((_req, res, next) => {
+        res.sendFile(indexHtml, (err) => {
+            if (err)
+                next(err);
+        });
     });
-=======
-    const api = config_1.config.app.apiPrefix;
-    app.use(`${api}/cards`, routes_1.cardRoutes);
-    const frontendPath = process.env.FRONTEND_PATH ||
-        "/home/u166243786/domains/qr.buildigo.org/public_html/.builds/source/frontend/dist";
-    if (fs_1.default.existsSync(frontendPath)) {
-        app.use(express_1.default.static(frontendPath));
-        app.get(/(.*)/, (_req, res) => {
-            res.sendFile(path_1.default.join(frontendPath, "index.html"));
-        });
-    }
-    else {
-        app.get(/(.*)/, (_req, res) => {
-            res.status(404).json({
-                success: false,
-                message: "Frontend not found. Set FRONTEND_PATH env var to the absolute path of your frontend dist/.",
-            });
-        });
-    }
->>>>>>> 9afc19a25287bc16ba8734d8df2f8cb4de05592e
+    // ─── Error Handler ───
     app.use(error_handler_1.errorHandler);
     return app;
 }
