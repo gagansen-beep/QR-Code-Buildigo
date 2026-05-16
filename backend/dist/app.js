@@ -84,13 +84,14 @@ function createApp() {
     });
     // ─── API Routes ───
     const api = config_1.config.app.apiPrefix;
-    app.use(`${api}/cards`, routes_1.cardRoutes);
+    // app.use(`${api}/cards`, cardRoutes);
     // ─── Frontend ───
     const frontendDist = "/home/u166243786/domains/qr.buildigo.org/public_html/.builds/source/frontend/dist";
     app.use(express_1.default.static(frontendDist));
     app.use((_req, res) => {
         res.sendFile(path_1.default.join(frontendDist, "index.html"));
     });
+    app.use(`${api}/cards`, routes_1.cardRoutes);
     app.use(error_handler_1.errorHandler);
     return app;
 }

@@ -61,7 +61,7 @@ export function createApp(): express.Application {
 
   // ─── API Routes ───
   const api = config.app.apiPrefix;
-  app.use(`${api}/cards`, cardRoutes);
+  // app.use(`${api}/cards`, cardRoutes);
 
   // ─── Frontend ───
   const frontendDist = "/home/u166243786/domains/qr.buildigo.org/public_html/.builds/source/frontend/dist";
@@ -70,7 +70,7 @@ export function createApp(): express.Application {
   app.use((_req, res) => {
     res.sendFile(path.join(frontendDist, "index.html"));
   });
-
+ app.use(`${api}/cards`, cardRoutes);
   app.use(errorHandler);
 
   return app;
