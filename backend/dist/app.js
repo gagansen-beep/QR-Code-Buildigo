@@ -86,10 +86,10 @@ function createApp() {
     const api = config_1.config.app.apiPrefix;
     app.use(`${api}/cards`, routes_1.cardRoutes);
     // ─── Frontend ───
-    const frontendPath = "/home/u166243786/domains/qr.buildigo.org/public_html/.builds/source/frontend/dist";
-    app.use(express_1.default.static(frontendPath));
+    const frontendDist = "/home/u166243786/domains/qr.buildigo.org/public_html/.builds/source/frontend/dist";
+    app.use(express_1.default.static(frontendDist));
     app.use((_req, res) => {
-        res.sendFile(path_1.default.join(frontendPath, "index.html"));
+        res.sendFile(path_1.default.join(frontendDist, "index.html"));
     });
     app.use(error_handler_1.errorHandler);
     return app;
