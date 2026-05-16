@@ -61,16 +61,34 @@ export function createApp(): express.Application {
 
   // ─── API Routes ───
   const api = config.app.apiPrefix;
-  // app.use(`${api}/cards`, cardRoutes);
+  app.use(`${api}/cards`, cardRoutes);
 
   // ─── Frontend ───
-  const frontendDist = "/home/u166243786/domains/qr.buildigo.org/public_html/.builds/source/frontend/dist";
+  const frontendDist = process.env.FRONTEND_DIST
+    ?? "/home/u166243786/domains/qr.buildigo.org/public_html/.builds/source/frontend/dist";
+  const indexHtml = path.join(frontendDist, "index.html");
+
+  const indexExists = fs.existsSync(indexHtml);
+  if (!indexExists) {
+    console.warn(`[app] WARNING: index.html not found at ${indexHtml}`);
+  }
 
   app.use(express.static(frontendDist));
-  app.use((_req, res) => {
-    res.sendFile(path.join(frontendDist, "index.html"));
+
+  // SPA catch-all — must come after all API routes, before errorHandler
+  app.get("*", (_req, res) => {
+    if (indexExists) {
+      res.sendFile(indexHtml);
+    } else {
+      // Never return JSON for frontend routes — always return HTML so React can load
+      res.status(200).type("html").send(
+        '<!DOCTYPE html><html><head><meta charset="utf-8">' +
+        '<meta http-equiv="refresh" content="5;url=/"></head>' +
+        "<body><p>Loading... if this persists, contact support.</p></body></html>"
+      );
+    }
   });
- app.use(`${api}/cards`, cardRoutes);
+
   app.use(errorHandler);
 
   return app;

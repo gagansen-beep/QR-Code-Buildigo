@@ -43,6 +43,7 @@ const helmet_1 = __importDefault(require("helmet"));
 const compression_1 = __importDefault(require("compression"));
 const express_rate_limit_1 = __importDefault(require("express-rate-limit"));
 const path_1 = __importDefault(require("path"));
+const fs_1 = __importDefault(require("fs"));
 const config_1 = require("./middleware/config");
 const request_logger_1 = require("./middleware/request-logger");
 const error_handler_1 = require("./middleware/error-handler");
@@ -84,14 +85,28 @@ function createApp() {
     });
     // ─── API Routes ───
     const api = config_1.config.app.apiPrefix;
-    // app.use(`${api}/cards`, cardRoutes);
-    // ─── Frontend ───
-    const frontendDist = "/home/u166243786/domains/qr.buildigo.org/public_html/.builds/source/frontend/dist";
-    app.use(express_1.default.static(frontendDist));
-    app.use((_req, res) => {
-        res.sendFile(path_1.default.join(frontendDist, "index.html"));
-    });
     app.use(`${api}/cards`, routes_1.cardRoutes);
+    // ─── Frontend ───
+    const frontendDist = process.env.FRONTEND_DIST
+        ?? "/home/u166243786/domains/qr.buildigo.org/public_html/.builds/source/frontend/dist";
+    const indexHtml = path_1.default.join(frontendDist, "index.html");
+    const indexExists = fs_1.default.existsSync(indexHtml);
+    if (!indexExists) {
+        console.warn(`[app] WARNING: index.html not found at ${indexHtml}`);
+    }
+    app.use(express_1.default.static(frontendDist));
+    // SPA catch-all — must come after all API routes, before errorHandler
+    app.get("*", (_req, res) => {
+        if (indexExists) {
+            res.sendFile(indexHtml);
+        }
+        else {
+            // Never return JSON for frontend routes — always return HTML so React can load
+            res.status(200).type("html").send('<!DOCTYPE html><html><head><meta charset="utf-8">' +
+                '<meta http-equiv="refresh" content="5;url=/"></head>' +
+                "<body><p>Loading... if this persists, contact support.</p></body></html>");
+        }
+    });
     app.use(error_handler_1.errorHandler);
     return app;
 }
