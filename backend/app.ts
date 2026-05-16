@@ -64,10 +64,11 @@ export function createApp(): express.Application {
   app.use(`${api}/cards`, cardRoutes);
 
   // ─── Frontend ───
-  const frontendPath = "/home/u166243786/domains/qr.buildigo.org/public_html/.builds/source/frontend/dist";
-  app.use(express.static(frontendPath));
+  const frontendDist = "/home/u166243786/domains/qr.buildigo.org/public_html/.builds/source/frontend/dist";
+
+  app.use(express.static(frontendDist));
   app.use((_req, res) => {
-    res.sendFile(path.join(frontendPath, "index.html"));
+    res.sendFile(path.join(frontendDist, "index.html"));
   });
 
   app.use(errorHandler);
